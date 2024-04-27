@@ -27,3 +27,4 @@ MEASU_CHOICES = (
     ('щепотка', 'щепотка'),
 )
 MEASU_MAX_LENGHT = max([len(measu) for measu, _ in MEASU_CHOICES])
+BOOL_CHOICES = ((0, 'False'), (1, 'True'))

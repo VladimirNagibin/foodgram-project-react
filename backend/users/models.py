@@ -1,18 +1,44 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.password_validation import validate_password
 from django.db import models
 
-from .constants import PASSWORD_MAX_LENGHT, EMAIL_MAX_LENGHT
+# from recipes.models import Recipe
+from .constants import NAME_MAX_LENGHT, PASSWORD_MAX_LENGHT, EMAIL_MAX_LENGHT
 
 
 class User(AbstractUser):
     password = models.CharField(
         max_length=PASSWORD_MAX_LENGHT,
-        verbose_name='Пароль'
+        verbose_name='Пароль',
+        validators=(validate_password, )
     )
     email = models.EmailField(
         max_length=EMAIL_MAX_LENGHT,
         unique=True,
         verbose_name='Почта'
+    )
+    first_name = models.CharField(
+        max_length=NAME_MAX_LENGHT,
+        verbose_name='Имя'
+    )
+    last_name = models.CharField(
+        max_length=NAME_MAX_LENGHT,
+        verbose_name='Фамилия'
+    )
+    favorite = models.ManyToManyField(
+        'recipes.Recipe',
+        verbose_name='Избранное',
+        related_name='favorite_users'
+    )
+    shopping_cart = models.ManyToManyField(
+        'recipes.Recipe',
+        verbose_name='Список покупок',
+        related_name='shopping_cart_users'
+    )
+    subscription = models.ManyToManyField(
+        'User',
+        verbose_name='Подписки',
+        related_name='followers'
     )
 
     class Meta:
