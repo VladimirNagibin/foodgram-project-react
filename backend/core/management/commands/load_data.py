@@ -14,7 +14,7 @@ DIR_DATA = '../data'
 DATA = (
     ('ingredients.csv',
      Ingredient,
-     ['name', 'measurement_unit']),
+     ['id', 'name', 'measurement_unit']),
     ('tags.csv',
      Tag,
      ['id', 'name', 'color', 'slug']),
@@ -49,7 +49,6 @@ class Command(BaseCommand):
         try:
             with open(f'{DIR_DATA}/{filename}', encoding='utf-8') as file_data:
                 reader = csv.reader(file_data)
-                i = 1
                 for row in reader:
                     object_value = {
                         key: value for key, value in zip(fields, row)
@@ -61,15 +60,10 @@ class Command(BaseCommand):
                         if obj == User:
                             object.set_password(object_value['password'])
                             object.save()
-                        if obj == Ingredient:
-                            object.id = i
-                            i += 1
-                            object.save()
                     except IntegrityError:
                         self.stdout.write(f'Файл {filename} не корректные '
                                           f'данные: {object_value} для '
                                           f'{obj.__name__}')
-
         except FileNotFoundError:
             self.stdout.write(f'Файл {filename} невозможно открыть')
         except Exception as e:

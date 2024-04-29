@@ -3,6 +3,7 @@ from pprint import pprint
 from drf_extra_fields.fields import Base64ImageField
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
@@ -155,9 +156,6 @@ class UserSubscribeSerializer(serializers.Serializer):
         instance.subscription.add(validated_data['author'])
         return instance
 
-    # def delete(self, instance, validated_data):
-    #    instance.subscription.remove(validated_data['author'])
-
 
 class IngredientRecipeSerialiser(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient_id')
@@ -281,10 +279,6 @@ class RecipeSerialiser(serializers.ModelSerializer):
         for tag in tags:
             recipe.tags.add(tag)
         for ingredient_recipe in ingredients:
-            #current_ingredient = get_object_or_404(
-            #    Ingredient,
-            #    id=ingredient_recipe['ingredient_id'],
-            #)
             recipe.ingredients.add(
                 Ingredient.objects.get(id=ingredient_recipe['ingredient_id']),
                 through_defaults={"amount": ingredient_recipe['amount']}
@@ -292,87 +286,78 @@ class RecipeSerialiser(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data, **kwargs):
-        print(self.partial)
-        tags = (validated_data.pop('tags')
-                if 'tags' in self.validated_data else None)
-        ingredients = (validated_data.pop('ingredient_recipes')
-                       if 'ingredient_recipes' in self.validated_data else None)
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredient_recipes')
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        if tags:
-            instance.tags.clear()
-            for tag in tags:
-                instance.tags.add(tag)
-        if ingredients:
-            instance.ingredients.clear()
-            for ingredient_recipe in ingredients:
-                #current_ingredient = get_object_or_404(
-                #    Ingredient,
-                #    id=ingredient_recipe['ingredient_id'],
-                #)
-                instance.ingredients.add(
-                    Ingredient.objects.get(id=ingredient_recipe['ingredient_id']),
-                    through_defaults={"amount": ingredient_recipe['amount']}
-                )
+        instance.tags.clear()
+        for tag in tags:
+            instance.tags.add(tag)
+        instance.ingredients.clear()
+        for ingredient_recipe in ingredients:
+            instance.ingredients.add(
+                Ingredient.objects.get(id=ingredient_recipe['ingredient_id']),
+                through_defaults={"amount": ingredient_recipe['amount']}
+            )
         return instance
 
 
 class UserFavoriteSerializer(serializers.Serializer):
 
     def validate(self, data):
-        recipe = self.context.get('recipe')
-        if not Recipe.objects.filter(id=recipe):
-            raise serializers.ValidationError(
-                'Рецепт не найден.'
-            )
-        recipe = Recipe.objects.get(id=recipe)
         request = self.context.get('request')
-        user = self.instance
-        if recipe in user.favorite.all() and request.method == 'POST':
-            raise serializers.ValidationError(
-                'В избранное уже было добавлено.'
-            )
-        elif (
-            recipe not in user.favorite.all() and
-            request.method == 'DELETE'
-        ):
-            raise serializers.ValidationError(
-                'В избранное ещё не добавлено.'
-            )
-        data['recipe'] = recipe
+        recipe_id = request.parser_context.get('kwargs')['recipe_id']
+        if not Recipe.objects.filter(id=recipe_id):
+            if request.method == 'POST':
+                raise serializers.ValidationError(
+                    'Рецепт не найден.',
+                )
+            else:
+                raise Http404('Рецепт не найден.')
+        if self.instance.favorite.filter(id=recipe_id):
+            if request.method == 'POST':
+                raise serializers.ValidationError(
+                    'В избранное уже был добавлен рецепт.'
+                )
+        else:
+            if request.method == 'DELETE':
+                raise serializers.ValidationError(
+                    'В избранное ещё не был добавлен рецепт для удаления.'
+                )
+        data['recipe_id'] = recipe_id
         return data
 
     def update(self, instance, validated_data):
-        instance.favorite.add(validated_data['recipe'])
+        instance.favorite.add(validated_data['recipe_id'])
         return instance
 
 
 class UserShoppingCartSerializer(serializers.Serializer):
 
     def validate(self, data):
-        recipe = self.context.get('recipe')
-        if not Recipe.objects.filter(id=recipe):
-            raise serializers.ValidationError(
-                'Рецепт не найден.'
-            )
-        recipe = Recipe.objects.get(id=recipe)
         request = self.context.get('request')
-        user = self.instance
-        if recipe in user.shopping_cart.all() and request.method == 'POST':
-            raise serializers.ValidationError(
-                'В список покупок уже было добавлено.'
-            )
-        elif (
-            recipe not in user.shopping_cart.all() and
-            request.method == 'DELETE'
-        ):
-            raise serializers.ValidationError(
-                'В список покупок ещё не добавлено.'
-            )
-        data['recipe'] = recipe
+        recipe_id = request.parser_context.get('kwargs')['recipe_id']
+        if not Recipe.objects.filter(id=recipe_id):
+            if request.method == 'POST':
+                raise serializers.ValidationError(
+                    'Рецепт не найден.',
+                )
+            else:
+                raise Http404('Рецепт не найден.')
+        if self.instance.shopping_cart.filter(id=recipe_id):
+            if request.method == 'POST':
+                raise serializers.ValidationError(
+                    'В список покупок уже был добавлен рецепт.'
+                )
+        else:
+            if request.method == 'DELETE':
+                raise serializers.ValidationError(
+                    'В список покупок ещё не был добавлен рецепт для удаления.'
+                )
+        data['recipe_id'] = recipe_id
         return data
 
     def update(self, instance, validated_data):
-        instance.shopping_cart.add(validated_data['recipe'])
+        instance.shopping_cart.add(validated_data['recipe_id'])
         return instance
