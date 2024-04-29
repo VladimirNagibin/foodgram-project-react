@@ -10,7 +10,7 @@ from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag
 
 User = get_user_model()
 
-DIR_DATA = '../data'
+DIR_DATA = 'data'
 DATA = (
     ('ingredients.csv',
      Ingredient,

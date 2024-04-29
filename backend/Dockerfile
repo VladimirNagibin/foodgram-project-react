@@ -3,4 +3,5 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 COPY . .
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend_foodgram.wsgi"]
+# COPY entrypoint.sh .
+ENTRYPOINT ["/bin/bash","-c","./entrypoint.sh"]
