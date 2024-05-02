@@ -148,7 +148,7 @@ jobs:
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         source: "docker-compose.production.yml"
         target: "foodgram"
-        #timeout: 120s
+        timeout: 120s
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
       with:
