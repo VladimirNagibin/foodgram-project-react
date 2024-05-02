@@ -3,9 +3,17 @@ from pprint import pprint
 from django.contrib.auth import get_user_model
 from django.core.files import File
 from django.db.models import Count, Sum, Value
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.utils import ImageReader, DebugMemo
+from reportlab.lib.units import mm, inch
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action  # , api_view # permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -122,10 +130,10 @@ class SubscriptionListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     def get_queryset(self):
         return self.request.user.subscription.annotate(
-                recipes_count=Count('recipes')
-            ).annotate(is_subscribed=Value(True)).prefetch_related(
-                'recipes'
-            ).order_by('username')
+            recipes_count=Count('recipes')
+        ).annotate(is_subscribed=Value(True)).prefetch_related(
+            'recipes'
+        ).order_by('username')
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -159,12 +167,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Recipe.objects.prefetch_related(
-                'tags'
-            ).prefetch_related(
-                'ingredient_recipes'
-            ).select_related(
-                'author'
-            )    
+            'tags'
+        ).prefetch_related(
+            'ingredient_recipes'
+        ).select_related(
+            'author'
+        )    
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -253,6 +261,93 @@ class RecipeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
 
+    def get_pdf(self, user, link):
+        #request.build_absolute_uri('/')
+        ingredients = user.shopping_cart.prefetch_related(
+            'ingredients'
+        ).values(
+            'ingredients__name',
+            'ingredients__measurement_unit'
+        ).annotate(amount=Sum('ingredient_recipes__amount')).order_by(
+            'ingredients__name'
+        )
+
+        pdfmetrics.registerFont(
+            TTFont('DejaVuSerif', 'DejaVuSerif.ttf', 'UTF-8')
+        )
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = ('attachment;'
+                                           'filename="ingredients.pdf"')
+        y_start = 600
+        y = 750
+        x = 100
+        x_start = 10
+        size = 1
+        size_recipe = 0.5
+        step = 20
+        step_big = 50
+        font = 20
+        font_big = 50
+        font_middle = 25
+        max_length = 40
+        head_length = 5
+        logo_path = '../static/logo192.png'
+        p = canvas.Canvas(response)
+        logo = ImageReader(logo_path)
+        p.drawImage(logo, x_start, y, size * inch, size * inch)
+        p.setFont("DejaVuSerif", font_big)
+        p.drawString(x, y, 'FOODGRAM')  # hiperlink
+        p.linkURL(
+            link,
+            (x, y, x + head_length * inch, y + step_big),
+            relative=1
+        )
+        y -= step_big
+        p.setFont("DejaVuSerif", font_middle)
+        p.drawString(x_start, y, "Для приготовления выбранных блюд:")
+        y -= step_big
+        p.setFont("DejaVuSerif", font)
+        for recipe in user.shopping_cart.all():
+            image = ImageReader(recipe.image)
+            p.drawImage(
+                image,
+                x_start + step,
+                y,
+                size_recipe * inch,
+                size_recipe * inch,
+            )
+            p.drawString(
+                x, y, f'{recipe.name[:max_length]}'
+            )
+            y -= step_big
+            if y <= 0:
+                y = y_start
+                p.showPage()
+                p.setFont("DejaVuSerif", font)
+        p.setFont("DejaVuSerif", font_middle)
+        p.drawString(x_start, y, "Требуются следующие ингредиенты:")
+        y -= step_big
+        if y <= 0:
+            y = y_start
+            p.showPage()
+        p.setFont("DejaVuSerif", font)
+        for ingredient in ingredients:
+            p.drawString(
+                x, y,
+                (f'{ingredient["ingredients__name"]}, '
+                 f'{ingredient["amount"]} '
+                 f'{ingredient["ingredients__measurement_unit"]}')
+            )
+            y -= step
+            if y <= 0:
+                y = y_start
+                p.showPage()
+                p.setFont("DejaVuSerif", font)
+
+        p.showPage()
+        p.save()
+        return response
+
     @action(
         detail=False,
         methods=('GET', ),
@@ -261,27 +356,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated, ))
     def download_shopping_cart(self, request):
         """Функция для скачивания списка покупок."""
-        ingredients = request.user.shopping_cart.prefetch_related(
-            'ingredients'
-        ).values(
-            'ingredients__name',
-            'ingredients__measurement_unit'
-        ).annotate(amount=Sum('ingredient_recipes__amount')).order_by(
-            'ingredients__name'
-        )
-        with open('upload/Hello.txt', 'w') as f:
-            myfile = File(f)
-            for ingredient in ingredients:
-                myfile.write(f'{ingredient["ingredients__name"]}, '
-                             f'{ingredient["ingredients__measurement_unit"]} '
-                             f'кол-во: {ingredient["amount"]}\n')
-        myfile.closed
-        try:
-            file = open('upload/Hello.txt', 'rb')
-            response = FileResponse(file, as_attachment=True)
-            response['Content-Disposition'] = 'attachment; filename="Hello.txt"'
-            return response
-        except FileNotFoundError:
-            return Response(
-                status=status.HTTP_404_NOT_FOUND
-            )
+
+        return self.get_pdf(request.user, request.build_absolute_uri('/'))

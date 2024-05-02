@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'djoser',
     'django_filters',
+    'colorfield',
     'users.apps.UsersConfig',
     'core.apps.CoreConfig',
     'recipes.apps.RecipesConfig',

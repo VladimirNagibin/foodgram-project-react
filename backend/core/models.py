@@ -4,7 +4,11 @@ from recipes.constants import NAME_MAX_LENGHT, TEXT_LIMIT
 
 
 class NameModel(models.Model):
-    name = models.CharField('Название', max_length=NAME_MAX_LENGHT)
+    name = models.CharField(
+        'Название',
+        max_length=NAME_MAX_LENGHT,
+        unique=True
+    )
 
     class Meta:
         abstract = True

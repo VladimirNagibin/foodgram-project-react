@@ -1,5 +1,8 @@
 import csv
 
+from django.core.management.color import no_style
+from django.db import connection
+
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -20,8 +23,7 @@ DATA = (
      ['id', 'name', 'color', 'slug']),
     ('users.csv',
      User,
-     ['id', 'username', 'first_name', 'last_name', 'email',
-      'password', 'is_staff', 'is_superuser']),
+     ['id', 'username', 'first_name', 'last_name', 'email', 'password']),
     ('subscriptions.csv',
      apps.get_model('users', 'user_subscription'),
      ['from_user_id', 'to_user_id']),
@@ -71,10 +73,16 @@ class Command(BaseCommand):
         self.stdout.write(f'Файл {filename} загружен')
 
     def handle(self, *args, **kwargs):
+        models = []
         for filename, obj, fields in DATA:
             if kwargs['erase']:
                 obj.objects.all().delete()
             self.load_obj(filename, obj, fields)
+            models.append(obj)
+        sequence_sql = connection.ops.sequence_reset_sql(no_style(), models)
+        with connection.cursor() as cursor:
+            for sql in sequence_sql:
+                cursor.execute(sql)
 
     def add_arguments(self, parser):
         parser.add_argument(

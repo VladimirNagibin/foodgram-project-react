@@ -1,3 +1,4 @@
+from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
 from django.db import models
 
@@ -6,9 +7,7 @@ from .constants import (
     MEASU_MAX_LENGHT,
     MEASU_CHOICES,
     SLUG_MAX_LENGHT,
-    COLOR_MAX_LENGHT
 )
-from .validators import validate_color
 
 # User = get_user_model()
 
@@ -30,13 +29,7 @@ class Ingredient(NameModel):
 
 
 class Tag(NameModel):
-    color = models.CharField(
-        'Цвет',
-        max_length=COLOR_MAX_LENGHT,
-        blank=True,
-        null=True,
-        validators=(validate_color, )
-    )
+    color = ColorField('Цвет', unique=True, default='#FFFFFF')
     slug = models.SlugField(
         'Слаг',
         max_length=SLUG_MAX_LENGHT,
@@ -57,16 +50,17 @@ class Recipe(NameModel):
         verbose_name='Автор',
     )
     image = models.ImageField(
+        'Картинка',
         upload_to='recipes/'
     )
     text = models.TextField('Описание')
     cooking_time = models.PositiveSmallIntegerField('Время приготовления')
     ingredients = models.ManyToManyField(
         Ingredient,
-        verbose_name='Ингредиент',
+        verbose_name='Ингредиенты',
         through='IngredientRecipe'
     )
-    tags = models.ManyToManyField(Tag, verbose_name='Тэг')
+    tags = models.ManyToManyField(Tag, verbose_name='Тэги')
     created = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True
     )
@@ -81,15 +75,21 @@ class Recipe(NameModel):
 class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
+        verbose_name='Ингредиент',
         on_delete=models.CASCADE,
-        related_name='ingredient_recipes',
     )
     recipe = models.ForeignKey(
         Recipe,
+        verbose_name='Рецепт',
         on_delete=models.CASCADE,
-        related_name='ingredient_recipes',
     )
     amount = models.PositiveSmallIntegerField('Количество')
+
+    class Meta(NameModel.Meta):
+        verbose_name = 'ингредиент'
+        verbose_name_plural = 'Ингредиенты'
+        default_related_name = 'ingredient_recipes'
+        ordering = ('ingredient',)
 
     def __str__(self):
         return f'{self.ingredient} {self.recipe}'
