@@ -1,10 +1,7 @@
-from pprint import pprint
-
-from drf_extra_fields.fields import Base64ImageField
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.http import Http404
-from django.shortcuts import get_object_or_404
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag
@@ -143,8 +140,8 @@ class UserSubscribeSerializer(serializers.Serializer):
                 'Подписка уже оформлена.'
             )
         elif (
-            author not in user.subscription.all() and
-            request.method == 'DELETE'
+            author not in user.subscription.all()
+                and request.method == 'DELETE'
         ):
             raise serializers.ValidationError(
                 'Подписка ещё не оформлена.'
@@ -242,7 +239,7 @@ class RecipeSerialiser(serializers.ModelSerializer):
         if (
             len(set(
                 [ingredient['ingredient_id'] for ingredient in value]
-                )) < len(value)
+            )) < len(value)
         ):
             raise serializers.ValidationError(
                 'Ингредиенты повторяются.'

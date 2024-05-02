@@ -1,13 +1,10 @@
 import csv
 
-from django.core.management.color import no_style
-from django.db import connection
-
 from django.apps import apps
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.db import IntegrityError
+from django.core.management.color import no_style
+from django.db import IntegrityError, connection
 
 from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag
 

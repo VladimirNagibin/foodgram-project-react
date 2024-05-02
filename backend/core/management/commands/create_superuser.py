@@ -21,7 +21,9 @@ class Command(BaseCommand):
                 email=os.getenv('SUPERUSER_EMAIL'),
                 password=os.getenv('SUPERUSER_PASSWORD')
             )
-            self.stdout.write(self.style.SUCCESS('Successfully created a new superuser')) 
+            self.stdout.write(self.style.SUCCESS(
+                'Successfully created a new superuser'
+            ))
         else:
             self.stdout.write(self.style.WARNING('A superuser already exists'))
 

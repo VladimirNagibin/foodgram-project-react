@@ -2,8 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.password_validation import validate_password
 from django.db import models
 
-# from recipes.models import Recipe
-from .constants import NAME_MAX_LENGHT, PASSWORD_MAX_LENGHT, EMAIL_MAX_LENGHT
+from users.constants import (EMAIL_MAX_LENGHT, NAME_MAX_LENGHT,
+                             PASSWORD_MAX_LENGHT)
 
 
 class User(AbstractUser):

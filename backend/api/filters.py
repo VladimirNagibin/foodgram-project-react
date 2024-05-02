@@ -1,4 +1,4 @@
-from django_filters import BooleanFilter, CharFilter, ChoiceFilter, ModelMultipleChoiceFilter
+from django_filters import CharFilter, ChoiceFilter, ModelMultipleChoiceFilter
 from django_filters.rest_framework import FilterSet
 
 from recipes.constants import BOOL_CHOICES

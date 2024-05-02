@@ -1,15 +1,8 @@
 from colorfield.fields import ColorField
-from django.contrib.auth import get_user_model
 from django.db import models
 
 from core.models import NameModel
-from .constants import (
-    MEASU_MAX_LENGHT,
-    MEASU_CHOICES,
-    SLUG_MAX_LENGHT,
-)
-
-# User = get_user_model()
+from recipes.constants import MEASU_CHOICES, MEASU_MAX_LENGHT, SLUG_MAX_LENGHT
 
 
 class Ingredient(NameModel):
@@ -39,8 +32,8 @@ class Tag(NameModel):
     )
 
     class Meta(NameModel.Meta):
-        verbose_name = 'тэг'
-        verbose_name_plural = 'Тэги'
+        verbose_name = 'тег'
+        verbose_name_plural = 'Теги'
 
 
 class Recipe(NameModel):
@@ -60,7 +53,7 @@ class Recipe(NameModel):
         verbose_name='Ингредиенты',
         through='IngredientRecipe'
     )
-    tags = models.ManyToManyField(Tag, verbose_name='Тэги')
+    tags = models.ManyToManyField(Tag, verbose_name='Теги')
     created = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True
     )

@@ -1,40 +1,29 @@
-from pprint import pprint
-
 from django.contrib.auth import get_user_model
-from django.core.files import File
 from django.db.models import Count, Sum, Value
-from django.http import FileResponse, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.utils import ImageReader, DebugMemo
-from reportlab.lib.units import mm, inch
-from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
+from reportlab.pdfgen import canvas
 from rest_framework import mixins, status, viewsets
-from rest_framework.decorators import action  # , api_view # permission_classes
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .filters import IngredientFilter, RecipeFilter
-from .permissions import (IsAuthenticatedOrAuthorOrReadOnly, )
-from .paginations import LimitPageNumberPagination
-from .serializers import (
-    IngredientSerialiser,
-    UserFavoriteSerializer,
-    UserIsSubscribedSerializer,
-    UserSerializer,
-    UserSetPasswordSerialiser,
-    UserShoppingCartSerializer,
-    UserSubscribeSerializer,
-    RecipeSerialiser,
-    SubscriptionRecipeSerialiser,
-    SubscriptionSerializer,
-    TagSerialiser,
-)
+from api.filters import IngredientFilter, RecipeFilter
+from api.paginations import LimitPageNumberPagination
+from api.permissions import IsAuthenticatedOrAuthorOrReadOnly
+from api.serializers import (IngredientSerialiser, RecipeSerialiser,
+                             SubscriptionRecipeSerialiser,
+                             SubscriptionSerializer, TagSerialiser,
+                             UserFavoriteSerializer,
+                             UserIsSubscribedSerializer, UserSerializer,
+                             UserSetPasswordSerialiser,
+                             UserShoppingCartSerializer,
+                             UserSubscribeSerializer)
 from recipes.models import Ingredient, Recipe, Tag
 
 User = get_user_model()
@@ -172,7 +161,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredient_recipes'
         ).select_related(
             'author'
-        )    
+        )
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -262,7 +251,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     def get_pdf(self, user, link):
-        #request.build_absolute_uri('/')
         ingredients = user.shopping_cart.prefetch_related(
             'ingredients'
         ).values(
@@ -296,7 +284,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         logo = ImageReader(logo_path)
         p.drawImage(logo, x_start, y, size * inch, size * inch)
         p.setFont("DejaVuSerif", font_big)
-        p.drawString(x, y, 'FOODGRAM')  # hiperlink
+        p.drawString(x, y, 'FOODGRAM')
         p.linkURL(
             link,
             (x, y, x + head_length * inch, y + step_big),

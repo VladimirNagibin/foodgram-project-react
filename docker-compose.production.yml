@@ -12,21 +12,21 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
   backend:
-    build: ./backend/
+    image: vlnag/foodgram_backend
     env_file: .env
+    command: gunicorn backend_foodgram.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static:/static
       - media:/app/media
     depends_on:
       - db    
   frontend:
-    env_file: .env
-    build: ./frontend/
+    image: vlnag/foodgram_frontend
     command: cp -r /app/build/. /static/
     volumes:
       - static:/static
   gateway:
-    build: ./infra/
+    image: vlnag/foodgram_gateway
     env_file: .env
     ports:
       - 8080:80
