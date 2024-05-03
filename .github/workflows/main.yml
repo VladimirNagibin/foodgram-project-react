@@ -82,7 +82,6 @@ jobs:
       run: |
         cd frontend/
         npm i history
-        npm install 
 
     - name: Test frontend
       run: |
