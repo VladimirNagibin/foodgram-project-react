@@ -67,25 +67,25 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
 
-  #frontend_tests:
-  #  runs-on: ubuntu-latest
+  frontend_tests:
+    runs-on: ubuntu-latest
+    if: ${{ vars.RUN_FRONTEND_TEST == 'true' }}    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up nodeJS
+      uses: actions/setup-node@v3
+      with:
+        node-version: 13.12.0
 
-  #  steps:
-  #  - uses: actions/checkout@v3
-  #  - name: Set up nodeJS
-  #    uses: actions/setup-node@v3
-  #    with:
-  #      node-version: 13.12.0
+    - name: Install dependencies
+      run: |
+        cd frontend/
+        npm ci
 
-  #  - name: Install dependencies
-  #    run: |
-  #      cd frontend/
-  #      npm ci
-
-  #  - name: Test frontend
-  #    run: |
-  #      cd frontend/
-  #      npm run test
+    - name: Test frontend
+      run: |
+        cd frontend/
+        npm run test
 
   build_frontend_and_push_to_docker_hub:
     name: Push frontend Docker image to DockerHub
