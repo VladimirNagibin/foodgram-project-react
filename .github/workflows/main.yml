@@ -164,27 +164,8 @@ jobs:
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
           sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. /static/static/
-        #timeout: 120s
-    # if: ${{ vars.LOAD_DATA == 'true' }}    
-    #- name: Executing remote ssh commands to load test data
-    #  uses: appleboy/ssh-action@master
-    #  with:
-    #    host: ${{ secrets.HOST }}
-    #    username: ${{ secrets.USER }}
-    #    key: ${{ secrets.SSH_KEY }}
-    #    passphrase: ${{ secrets.SSH_PASSPHRASE }}
-    #    script: |
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py load_data -e
           sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/data/recipes/. /app/media/recipes/
-    # if: ${{ vars.CREATE_SUPERUSER == 'true' }}    
-    #- name: Executing remote ssh commands to create superuser
-    #  uses: appleboy/ssh-action@master
-    #  with:
-    #    host: ${{ secrets.HOST }}
-    #    username: ${{ secrets.USER }}
-    #    key: ${{ secrets.SSH_KEY }}
-    #    passphrase: ${{ secrets.SSH_PASSPHRASE }}
-    #    script: |
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py create_superuser -u
 
   send_message:
