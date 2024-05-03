@@ -3,4 +3,4 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 COPY . .
-ENTRYPOINT ["/bin/bash","-c","./entrypoint.sh"]
+CMD ["/bin/bash","-c","./entrypoint.sh"]
