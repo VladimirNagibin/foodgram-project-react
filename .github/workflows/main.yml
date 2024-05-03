@@ -81,6 +81,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend/
+        npm i history
         npm install 
 
     - name: Test frontend
