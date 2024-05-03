@@ -82,7 +82,8 @@ jobs:
       run: |
         cd frontend/
         npm i history
-
+        npm audit fix`
+        
     - name: Test frontend
       run: |
         cd frontend/
