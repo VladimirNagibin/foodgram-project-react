@@ -76,13 +76,14 @@ jobs:
     - name: Set up nodeJS
       uses: actions/setup-node@v3
       with:
-        node-version: 13
+        node-version: 13.12
 
     - name: Install dependencies
       run: |
         cd frontend/
         npm i history
         npm audit fix
+        npm install
 
     - name: Test frontend
       run: |
