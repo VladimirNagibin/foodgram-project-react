@@ -19,7 +19,7 @@ services:
       - static:/static
       - media:/app/media
     depends_on:
-      - db    
+      - db
   frontend:
     image: vlnag/foodgram_frontend
     command: cp -r /app/build/. /static/
