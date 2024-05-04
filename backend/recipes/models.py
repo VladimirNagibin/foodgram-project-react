@@ -78,7 +78,7 @@ class IngredientRecipe(models.Model):
     )
     amount = models.PositiveSmallIntegerField('Количество')
 
-    class Meta(NameModel.Meta):
+    class Meta:
         verbose_name = 'ингредиент'
         verbose_name_plural = 'Ингредиенты'
         default_related_name = 'ingredient_recipes'

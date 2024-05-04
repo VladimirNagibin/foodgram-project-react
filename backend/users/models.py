@@ -25,7 +25,7 @@ class User(AbstractUser):
         max_length=NAME_MAX_LENGHT,
         verbose_name='Фамилия'
     )
-    favorite = models.ManyToManyField(
+    favorites = models.ManyToManyField(
         'recipes.Recipe',
         verbose_name='Избранное',
         related_name='favorite_users'
@@ -35,8 +35,10 @@ class User(AbstractUser):
         verbose_name='Список покупок',
         related_name='shopping_cart_users'
     )
-    subscription = models.ManyToManyField(
+    subscriptions = models.ManyToManyField(
         'User',
+        through='SubscriptionUser',
+        symmetrical=False,
         verbose_name='Подписки',
         related_name='followers'
     )
@@ -48,3 +50,35 @@ class User(AbstractUser):
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
+
+
+class SubscriptionUser(models.Model):
+    user = models.ForeignKey(
+        User,
+        verbose_name='Пользователь',
+        on_delete=models.CASCADE,
+        related_name='authors'
+    )
+    author = models.ForeignKey(
+        User,
+        verbose_name='Автор',
+        related_name='subscribers',
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'подписка'
+        verbose_name_plural = 'Подписки'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'author'),
+                name='unique_user_following'
+            ),
+            models.CheckConstraint(
+                name='prevent_self_follow',
+                check=~models.Q(author=models.F('user')),
+            ),
+        )
+
+    def __str__(self):
+        return f'{self.author}'

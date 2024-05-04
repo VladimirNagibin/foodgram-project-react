@@ -5,11 +5,18 @@ from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
 from .constants import MAX_HEIGHT_IMAGE_SIZE
+from .models import SubscriptionUser
 from .servises import object_link
 
 User = get_user_model()
 
 admin.site.unregister(Group)
+
+
+class UserSubscriptorInline(admin.TabularInline):
+    model = SubscriptionUser
+    extra = 1
+    fk_name = 'user'
 
 
 @admin.register(User)
@@ -23,9 +30,8 @@ class UserAdmin(BaseUserAdmin):
                                 'is_staff',
                                 'is_superuser')}),
         ('Рецепты пользователя', {'fields': ('recipes_of_user', )}),
-        ('Избранные рецепты', {'fields': ('favorite', )}),
+        ('Избранные рецепты', {'fields': ('favorites', )}),
         ('Рецепты в корзине', {'fields': ('shopping_cart', )}),
-        ('Подписан на авторов', {'fields': ('subscription', )}),
         ('Даты', {'fields': ('last_login',
                              'date_joined')}),
 
@@ -42,8 +48,9 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ('email', 'username')
     search_fields = ('email', 'username', 'first_name', 'last_name')
     list_editable = ('first_name', 'last_name', 'email')
-    filter_horizontal = ('favorite', 'shopping_cart', 'subscription')
+    filter_horizontal = ('favorites', 'shopping_cart')
     readonly_fields = ('recipes_of_user',)
+    inlines = (UserSubscriptorInline,)
 
     @admin.display(description='Кол-во рецептов у пользователя')
     def recipes_count(self, obj):

@@ -45,7 +45,7 @@ class UserIsSubscribedSerializer(UserSerializer):
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user
         return (
-            obj in user.subscription.all() if user and user.is_authenticated
+            obj in user.subscriptions.all() if user and user.is_authenticated
             else False
         )
 
@@ -135,12 +135,12 @@ class UserSubscribeSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 'Невозможно подписаться/отписаться на себя.'
             )
-        if author in user.subscription.all() and request.method == 'POST':
+        if author in user.subscriptions.all() and request.method == 'POST':
             raise serializers.ValidationError(
                 'Подписка уже оформлена.'
             )
         elif (
-            author not in user.subscription.all()
+            author not in user.subscriptions.all()
                 and request.method == 'DELETE'
         ):
             raise serializers.ValidationError(
@@ -150,7 +150,7 @@ class UserSubscribeSerializer(serializers.Serializer):
         return data
 
     def update(self, instance, validated_data):
-        instance.subscription.add(validated_data['author'])
+        instance.subscriptions.add(validated_data['author'])
         return instance
 
 
@@ -220,7 +220,7 @@ class RecipeSerialiser(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         user = self.context.get('request').user
         return (
-            obj in user.favorite.all() if user and user.is_authenticated
+            obj in user.favorites.all() if user and user.is_authenticated
             else False
         )
 
@@ -312,7 +312,7 @@ class UserFavoriteSerializer(serializers.Serializer):
                 )
             else:
                 raise Http404('Рецепт не найден.')
-        if self.instance.favorite.filter(id=recipe_id):
+        if self.instance.favorites.filter(id=recipe_id):
             if request.method == 'POST':
                 raise serializers.ValidationError(
                     'В избранное уже был добавлен рецепт.'
@@ -326,7 +326,7 @@ class UserFavoriteSerializer(serializers.Serializer):
         return data
 
     def update(self, instance, validated_data):
-        instance.favorite.add(validated_data['recipe_id'])
+        instance.favorites.add(validated_data['recipe_id'])
         return instance
 
 

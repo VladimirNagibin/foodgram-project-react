@@ -105,7 +105,7 @@ class UserViewSet(viewsets.ModelViewSet):
             context={'author': author, 'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        request.user.subscription.remove(author)
+        request.user.subscriptions.remove(author)
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
@@ -118,7 +118,7 @@ class SubscriptionListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = SubscriptionSerializer
 
     def get_queryset(self):
-        return self.request.user.subscription.annotate(
+        return self.request.user.subscriptions.annotate(
             recipes_count=Count('recipes')
         ).annotate(is_subscribed=Value(True)).prefetch_related(
             'recipes'
@@ -209,7 +209,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        request.user.favorite.remove(kwargs['recipe_id'])
+        request.user.favorites.remove(kwargs['recipe_id'])
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
