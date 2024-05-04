@@ -70,7 +70,7 @@ jobs:
 
   frontend_tests:
     runs-on: ubuntu-latest
-    if: ${{ vars.RUN_FRONTEND_TEST == 'true' }} # ++++++++++++=ghgh   
+    if: ${{ vars.RUN_FRONTEND_TEST == 'true' }} # ++++++++++++
     steps:
     - uses: actions/checkout@v3
     - name: Set up nodeJS
