@@ -11,6 +11,7 @@ services:
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
+    options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5  
   backend:
     image: vlnag/foodgram_backend
     env_file: .env
