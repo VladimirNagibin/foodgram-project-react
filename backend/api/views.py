@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Sum, Value, Exists, OuterRef, Subquery
+from django.db.models import Count, Exists, OuterRef, Subquery, Sum, Value
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.lib.units import inch
 from reportlab.lib.utils import ImageReader
@@ -16,14 +15,14 @@ from rest_framework.response import Response
 from api.filters import IngredientFilter, RecipeFilter
 from api.paginations import LimitPageNumberPagination
 from api.permissions import IsAuthenticatedOrAuthorOrReadOnly
-from api.serializers import (IngredientSerialiser, RecipeSerialiser,
-                             RecipeMinifieldSerialiser,
-                             UserWithRecipesSerializer, TagSerialiser,
+from api.serializers import (IngredientSerialiser, RecipeMinifieldSerialiser,
+                             RecipeSerialiser, TagSerialiser,
                              UserFavoriteSerializer,
                              UserIsSubscribedSerializer, UserSerializer,
                              UserSetPasswordSerialiser,
                              UserShoppingCartSerializer,
-                             UserSubscribeSerializer)
+                             UserSubscribeSerializer,
+                             UserWithRecipesSerializer)
 from recipes.models import Ingredient, Recipe, Tag
 from users.models import SubscriptionUser
 
