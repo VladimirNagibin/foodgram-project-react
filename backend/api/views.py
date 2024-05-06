@@ -259,7 +259,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).annotate(amount=Sum('ingredient_recipes__amount')).order_by(
             'ingredients__name'
         )
-
         pdfmetrics.registerFont(
             TTFont('DejaVuSerif', 'DejaVuSerif.ttf', 'UTF-8')
         )
@@ -281,8 +280,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         head_length = 5
         logo_path = '../static/logo192.png'
         p = canvas.Canvas(response)
-        logo = ImageReader(logo_path)
-        p.drawImage(logo, x_start, y, size * inch, size * inch)
+        try:
+            p.drawImage(
+                ImageReader(logo_path), x_start, y, size * inch, size * inch
+            )
+        except Exception:
+            ...
         p.setFont("DejaVuSerif", font_big)
         p.drawString(x, y, 'FOODGRAM')
         p.linkURL(
@@ -344,5 +347,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated, ))
     def download_shopping_cart(self, request):
         """Функция для скачивания списка покупок."""
-
+        
         return self.get_pdf(request.user, request.build_absolute_uri('/'))

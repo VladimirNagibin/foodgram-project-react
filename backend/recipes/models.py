@@ -22,7 +22,7 @@ class Ingredient(NameModel):
 
 
 class Tag(NameModel):
-    color = ColorField('Цвет', unique=True, default='#FFFFFF')
+    color = ColorField('Цвет', blank=True, null=True)
     slug = models.SlugField(
         'Слаг',
         max_length=SLUG_MAX_LENGHT,
@@ -51,7 +51,7 @@ class Recipe(NameModel):
     ingredients = models.ManyToManyField(
         Ingredient,
         verbose_name='Ингредиенты',
-        through='IngredientRecipe'
+        through='IngredientRecipe',
     )
     tags = models.ManyToManyField(Tag, verbose_name='Теги')
     created = models.DateTimeField(
@@ -83,6 +83,12 @@ class IngredientRecipe(models.Model):
         verbose_name_plural = 'Ингредиенты'
         default_related_name = 'ingredient_recipes'
         ordering = ('ingredient',)
+        constraints = (
+            models.UniqueConstraint(
+                fields=('ingredient', 'recipe'),
+                name='unique_ingredient_recipe'
+            ),
+        )
 
     def __str__(self):
         return f'{self.ingredient} {self.recipe}'

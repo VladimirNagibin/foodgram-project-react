@@ -7,7 +7,6 @@ class NameModel(models.Model):
     name = models.CharField(
         'Название',
         max_length=NAME_MAX_LENGHT,
-        unique=True
     )
 
     class Meta:
