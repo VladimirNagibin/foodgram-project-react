@@ -28,12 +28,14 @@ class User(AbstractUser):
     favorites = models.ManyToManyField(
         'recipes.Recipe',
         verbose_name='Избранное',
-        related_name='favorite_users'
+        related_name='favorite_users',
+        blank=True,
     )
     shopping_cart = models.ManyToManyField(
         'recipes.Recipe',
         verbose_name='Список покупок',
-        related_name='shopping_cart_users'
+        related_name='shopping_cart_users',
+        blank=True,
     )
     subscriptions = models.ManyToManyField(
         'User',

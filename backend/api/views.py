@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Sum, Value
+from django.db.models import Count, Sum, Value, Exists, OuterRef, Subquery
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -25,6 +25,7 @@ from api.serializers import (IngredientSerialiser, RecipeSerialiser,
                              UserShoppingCartSerializer,
                              UserSubscribeSerializer)
 from recipes.models import Ingredient, Recipe, Tag
+from users.models import SubscriptionUser
 
 User = get_user_model()
 
@@ -35,6 +36,17 @@ class UserViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'delete')
     permission_classes = (AllowAny, )
     pagination_class = LimitPageNumberPagination
+
+    def get_queryset(self):
+        user_id = (self.request.user.id
+                   if self.request.user.is_authenticated else 0)
+        return User.objects.annotate(
+            is_subscribed=Exists(Subquery(
+                SubscriptionUser.objects.filter(
+                    author=OuterRef('pk'),
+                    user=user_id)
+            ))
+        ).order_by('username')
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -51,7 +63,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_self(self, request):
         """Функция для получения данных о себе."""
         serializer = UserIsSubscribedSerializer(
-            request.user,
+            request.user, #.annotate(is_subscribed=Value(True)),
             context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -120,6 +132,7 @@ class SubscriptionListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def get_queryset(self):
         return self.request.user.subscriptions.annotate(
             recipes_count=Count('recipes')
+        #).prefetch_related(
         ).annotate(is_subscribed=Value(True)).prefetch_related(
             'recipes'
         ).order_by('username')

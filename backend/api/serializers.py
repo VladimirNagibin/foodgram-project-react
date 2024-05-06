@@ -37,17 +37,18 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserIsSubscribedSerializer(UserSerializer):
 
-    is_subscribed = serializers.SerializerMethodField(read_only=True)
-
+    #is_subscribed = serializers.SerializerMethodField(read_only=True)
+    is_subscribed = serializers.BooleanField(read_only=True)
+    
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ('is_subscribed',)
 
-    def get_is_subscribed(self, obj):
-        user = self.context.get('request').user
-        return (
-            obj in user.subscriptions.all() if user and user.is_authenticated
-            else False
-        )
+    #def get_is_subscribed(self, obj):
+    #    user = self.context.get('request').user
+    #    return (
+    #        obj in user.subscriptions.all() if user and user.is_authenticated
+    #        else False
+    #    )
 
 
 class UserSetPasswordSerialiser(serializers.Serializer):
@@ -94,12 +95,45 @@ class SubscriptionRecipeSerialiser(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор для работы с Subscription."""
+#class SubscriptionSerializer(serializers.ModelSerializer):
+#    """Сериализатор для работы с Subscription."""
 
-    is_subscribed = serializers.BooleanField()
+    #is_subscribed = serializers.BooleanField()
+    #recipes_count = serializers.IntegerField(read_only=True, default=0)
+    #recipes = serializers.SerializerMethodField()
+
+    #def get_recipes(self, obj):
+    #    recipes_limit = self.context.get('request').query_params.get(
+    #        'recipes_limit'
+    #    )
+    #    recipes_limit = (obj.recipes_count if not recipes_limit
+    #                     else int(recipes_limit))
+    #    return SubscriptionRecipeSerialiser(
+    #        obj._prefetched_objects_cache['recipes'][:recipes_limit], many=True
+    #    ).data
+
+    #class Meta:
+    #    model = User
+    #    fields = (
+    #        'id',
+    #        'username',
+    #        'email',
+    #        'first_name',
+    #        'last_name',
+    #        'is_subscribed',
+    #        'recipes',
+    #        'recipes_count',
+    #    )
+
+
+class SubscriptionSerializer(UserIsSubscribedSerializer):
+
     recipes_count = serializers.IntegerField(read_only=True, default=0)
     recipes = serializers.SerializerMethodField()
+
+    class Meta(UserIsSubscribedSerializer.Meta):
+        fields = (UserIsSubscribedSerializer.Meta.fields
+                  + ('recipes', 'recipes_count',))
 
     def get_recipes(self, obj):
         recipes_limit = self.context.get('request').query_params.get(
@@ -110,19 +144,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return SubscriptionRecipeSerialiser(
             obj._prefetched_objects_cache['recipes'][:recipes_limit], many=True
         ).data
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'email',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'recipes_count',
-        )
 
 
 class UserSubscribeSerializer(serializers.Serializer):
