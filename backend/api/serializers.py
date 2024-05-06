@@ -37,18 +37,60 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserIsSubscribedSerializer(UserSerializer):
 
-    #is_subscribed = serializers.SerializerMethodField(read_only=True)
-    is_subscribed = serializers.BooleanField(read_only=True)
-    
+    is_subscribed = serializers.BooleanField(read_only=True, default=False)
+
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ('is_subscribed',)
 
-    #def get_is_subscribed(self, obj):
-    #    user = self.context.get('request').user
-    #    return (
-    #        obj in user.subscriptions.all() if user and user.is_authenticated
-    #        else False
-    #    )
+
+class UserWithRecipesSerializer(UserIsSubscribedSerializer):
+
+    recipes_count = serializers.IntegerField(read_only=True, default=0)
+    recipes = serializers.SerializerMethodField()
+
+    class Meta(UserIsSubscribedSerializer.Meta):
+        fields = (UserIsSubscribedSerializer.Meta.fields
+                  + ('recipes', 'recipes_count',))
+
+    def get_recipes(self, obj):
+        recipes_limit = self.context.get('request').query_params.get(
+            'recipes_limit'
+        )
+        recipes_limit = (obj.recipes_count if not recipes_limit
+                         else int(recipes_limit))
+        return RecipeMinifieldSerialiser(
+            obj._prefetched_objects_cache['recipes'][:recipes_limit], many=True
+        ).data
+
+
+class UserSubscribeSerializer(serializers.Serializer):
+
+    def validate(self, data):
+        request = self.context.get('request')
+        author_id = int(request.parser_context.get('kwargs')['user_id'])
+        if not User.objects.filter(id=author_id):
+            raise Http404('Автор не найден.')
+        user = self.instance
+        if user.id == author_id:
+            raise serializers.ValidationError(
+                'Невозможно подписаться/отписаться на себя.'
+            )
+        if user.subscriptions.filter(id=author_id):
+            if request.method == 'POST':
+                raise serializers.ValidationError(
+                    'Подписка уже оформлена.'
+                )
+        else:
+            if request.method == 'DELETE':
+                raise serializers.ValidationError(
+                    'Подписка ещё не оформлена.'
+                )
+        data['author_id'] = author_id
+        return data
+
+    def update(self, instance, validated_data):
+        instance.subscriptions.add(validated_data['author_id'])
+        return instance
 
 
 class UserSetPasswordSerialiser(serializers.Serializer):
@@ -88,93 +130,6 @@ class IngredientSerialiser(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class SubscriptionRecipeSerialiser(serializers.ModelSerializer):
-
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-
-#class SubscriptionSerializer(serializers.ModelSerializer):
-#    """Сериализатор для работы с Subscription."""
-
-    #is_subscribed = serializers.BooleanField()
-    #recipes_count = serializers.IntegerField(read_only=True, default=0)
-    #recipes = serializers.SerializerMethodField()
-
-    #def get_recipes(self, obj):
-    #    recipes_limit = self.context.get('request').query_params.get(
-    #        'recipes_limit'
-    #    )
-    #    recipes_limit = (obj.recipes_count if not recipes_limit
-    #                     else int(recipes_limit))
-    #    return SubscriptionRecipeSerialiser(
-    #        obj._prefetched_objects_cache['recipes'][:recipes_limit], many=True
-    #    ).data
-
-    #class Meta:
-    #    model = User
-    #    fields = (
-    #        'id',
-    #        'username',
-    #        'email',
-    #        'first_name',
-    #        'last_name',
-    #        'is_subscribed',
-    #        'recipes',
-    #        'recipes_count',
-    #    )
-
-
-class SubscriptionSerializer(UserIsSubscribedSerializer):
-
-    recipes_count = serializers.IntegerField(read_only=True, default=0)
-    recipes = serializers.SerializerMethodField()
-
-    class Meta(UserIsSubscribedSerializer.Meta):
-        fields = (UserIsSubscribedSerializer.Meta.fields
-                  + ('recipes', 'recipes_count',))
-
-    def get_recipes(self, obj):
-        recipes_limit = self.context.get('request').query_params.get(
-            'recipes_limit'
-        )
-        recipes_limit = (obj.recipes_count if not recipes_limit
-                         else int(recipes_limit))
-        return SubscriptionRecipeSerialiser(
-            obj._prefetched_objects_cache['recipes'][:recipes_limit], many=True
-        ).data
-
-
-class UserSubscribeSerializer(serializers.Serializer):
-
-    def validate(self, data):
-        author = self.context.get('author')
-        request = self.context.get('request')
-        user = self.instance
-        if user == author:
-            raise serializers.ValidationError(
-                'Невозможно подписаться/отписаться на себя.'
-            )
-        if author in user.subscriptions.all() and request.method == 'POST':
-            raise serializers.ValidationError(
-                'Подписка уже оформлена.'
-            )
-        elif (
-            author not in user.subscriptions.all()
-                and request.method == 'DELETE'
-        ):
-            raise serializers.ValidationError(
-                'Подписка ещё не оформлена.'
-            )
-        data['author'] = author
-        return data
-
-    def update(self, instance, validated_data):
-        instance.subscriptions.add(validated_data['author'])
-        return instance
-
-
 class IngredientRecipeSerialiser(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient_id')
     name = serializers.SerializerMethodField()
@@ -190,6 +145,13 @@ class IngredientRecipeSerialiser(serializers.ModelSerializer):
 
     def get_measurement_unit(self, obj):
         return obj.ingredient.measurement_unit
+
+
+class RecipeMinifieldSerialiser(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class TagRelatedField(serializers.PrimaryKeyRelatedField):

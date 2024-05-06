@@ -9,7 +9,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework import mixins, status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -17,8 +17,8 @@ from api.filters import IngredientFilter, RecipeFilter
 from api.paginations import LimitPageNumberPagination
 from api.permissions import IsAuthenticatedOrAuthorOrReadOnly
 from api.serializers import (IngredientSerialiser, RecipeSerialiser,
-                             SubscriptionRecipeSerialiser,
-                             SubscriptionSerializer, TagSerialiser,
+                             RecipeMinifieldSerialiser,
+                             UserWithRecipesSerializer, TagSerialiser,
                              UserFavoriteSerializer,
                              UserIsSubscribedSerializer, UserSerializer,
                              UserSetPasswordSerialiser,
@@ -33,7 +33,7 @@ User = get_user_model()
 class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
-    http_method_names = ('get', 'post', 'delete')
+    http_method_names = ('get', 'post')
     permission_classes = (AllowAny, )
     pagination_class = LimitPageNumberPagination
 
@@ -63,7 +63,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_self(self, request):
         """Функция для получения данных о себе."""
         serializer = UserIsSubscribedSerializer(
-            request.user, #.annotate(is_subscribed=Value(True)),
+            request.user,
             context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -82,42 +82,32 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(
-        detail=False,
-        methods=('POST', ),
-        url_name='subscribe',
-        url_path=r'(?P<user_id>\d+)/subscribe',
-        permission_classes=(IsAuthenticated, ))
-    def subscribe(self, request, **kwargs):
-        """Функция для подписки."""
-        author = get_object_or_404(User.objects.annotate(
-            recipes_count=Count('recipes')
-        ).annotate(is_subscribed=Value(True)).prefetch_related(
-            'recipes'
-        ), pk=kwargs['user_id'])
-        serializer = UserSubscribeSerializer(
-            request.user,
-            data=request.data,
-            context={'author': author, 'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
+
+@api_view(('POST', 'DELETE'))
+@permission_classes((IsAuthenticated, ))
+def subscribe(request, **kwargs):
+    """Вью отвечающая за подписку пользователей."""
+
+    serializer = UserSubscribeSerializer(
+        request.user,
+        data=request.data,
+        context={'request': request}
+    )
+    serializer.is_valid(raise_exception=True)
+    if request.method == 'POST':
         serializer.save()
         return Response(
-            SubscriptionSerializer(author, context={'request': request}).data,
+            UserWithRecipesSerializer(
+                User.objects.annotate(
+                    recipes_count=Count('recipes')
+                ).annotate(is_subscribed=Value(True)).prefetch_related(
+                    'recipes'
+                ).get(id=kwargs['user_id']), context={'request': request}
+            ).data,
             status=status.HTTP_201_CREATED
         )
-
-    @subscribe.mapping.delete
-    def del_subscribe(self, request, **kwargs):
-        """Функция для отмены подписки."""
-        author = get_object_or_404(User, pk=kwargs['user_id'])
-        serializer = UserSubscribeSerializer(
-            request.user,
-            data=request.data,
-            context={'author': author, 'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        request.user.subscriptions.remove(author)
+    else:
+        request.user.subscriptions.remove(kwargs['user_id'])
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
@@ -127,12 +117,11 @@ class SubscriptionListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     permission_classes = (IsAuthenticated,)
     pagination_class = LimitPageNumberPagination
-    serializer_class = SubscriptionSerializer
+    serializer_class = UserWithRecipesSerializer
 
     def get_queryset(self):
         return self.request.user.subscriptions.annotate(
             recipes_count=Count('recipes')
-        #).prefetch_related(
         ).annotate(is_subscribed=Value(True)).prefetch_related(
             'recipes'
         ).order_by('username')
@@ -207,7 +196,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
-            SubscriptionRecipeSerialiser(
+            RecipeMinifieldSerialiser(
                 Recipe.objects.get(id=kwargs['recipe_id'])
             ).data,
             status=status.HTTP_201_CREATED
@@ -215,7 +204,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @favorite_add.mapping.delete
     def favorite_del(self, request, **kwargs):
-        """Функция для отмены подписки."""
+        """Функция для удаления из избранного."""
         serializer = UserFavoriteSerializer(
             request.user,
             data=request.data,
@@ -243,7 +232,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
-            SubscriptionRecipeSerialiser(
+            RecipeMinifieldSerialiser(
                 Recipe.objects.get(id=kwargs['recipe_id'])
             ).data,
             status=status.HTTP_201_CREATED
@@ -360,5 +349,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated, ))
     def download_shopping_cart(self, request):
         """Функция для скачивания списка покупок."""
-        
+
         return self.get_pdf(request.user, request.build_absolute_uri('/'))
