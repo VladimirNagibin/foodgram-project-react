@@ -82,11 +82,6 @@ jobs:
         cd frontend/
         npm install --force
 
-    - name: Install dependencies 2
-      run: |
-        cd frontend/
-        npm run build        
-
     - name: Test frontend
       run: |
         cd frontend/
