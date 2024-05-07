@@ -80,6 +80,8 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend/
+        npm install --save-dev "react@^16.6.0"
+        npm install --save-dev "react-dom@^16.6.0"
         npm install
 
     - name: Test frontend

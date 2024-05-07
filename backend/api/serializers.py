@@ -154,8 +154,10 @@ class RecipeSerialiser(RecipeMinifieldSerialiser):
         fields = (RecipeMinifieldSerialiser.Meta.fields
                   + ('tags', 'author', 'ingredients', 'is_favorited',
                      'is_in_shopping_cart', 'text'))
-        read_only_fields = (RecipeMinifieldSerialiser.Meta.read_only_fields
-                  + ('author', 'is_favorited', 'is_in_shopping_cart'))
+        read_only_fields = (
+            RecipeMinifieldSerialiser.Meta.read_only_fields
+            + ('author', 'is_favorited', 'is_in_shopping_cart')
+        )
 
     def get_is_favorited(self, obj):
         user = self.context.get('request').user
