@@ -3,7 +3,7 @@ from django.db import models
 
 from core.models import NameModel
 from recipes.constants import (MEASU_CHOICES, MEASU_MAX_LENGHT,
-                               NAME_MAX_LENGHT, SLUG_MAX_LENGHT)
+                               NAME_MAX_LENGHT, SLUG_MAX_LENGHT, TEXT_LIMIT)
 
 
 class Ingredient(NameModel):
@@ -39,6 +39,9 @@ class Tag(models.Model):
         verbose_name = 'тег'
         verbose_name_plural = 'Теги'
         ordering = ('name',)
+
+    def __str__(self):
+        return self.name[:TEXT_LIMIT]
 
 
 class Recipe(NameModel):
