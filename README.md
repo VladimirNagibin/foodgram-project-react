@@ -19,7 +19,9 @@
 - djoser
 - gunicorn
 - psycopg
+- reportlab
 
+**Фронтенд создан в виде SPA-приложения на React** 
 
 **Для CI/CD используются:**
 
