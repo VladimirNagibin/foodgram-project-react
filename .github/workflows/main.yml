@@ -80,7 +80,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend/
-        npm install
+        npm install --force
 
     - name: Install dependencies 2
       run: |
