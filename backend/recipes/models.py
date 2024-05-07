@@ -2,9 +2,8 @@ from colorfield.fields import ColorField
 from django.db import models
 
 from core.models import NameModel
-from recipes.constants import (
-    NAME_MAX_LENGHT, MEASU_CHOICES, MEASU_MAX_LENGHT, SLUG_MAX_LENGHT
-)
+from recipes.constants import (MEASU_CHOICES, MEASU_MAX_LENGHT,
+                               NAME_MAX_LENGHT, SLUG_MAX_LENGHT)
 
 
 class Ingredient(NameModel):
