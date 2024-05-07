@@ -69,14 +69,14 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
 
   frontend_tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     #if: ${{ vars.RUN_FRONTEND_TEST == 'true' }} # ++++++++++++
     steps:
     - uses: actions/checkout@v3
     - name: Set up nodeJS
       uses: actions/setup-node@v3
       with:
-        node-version: 18.*
+        node-version: 13.*
     - name: Install dependencies
       run: |
         cd frontend/
