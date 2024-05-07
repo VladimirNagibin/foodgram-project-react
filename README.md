@@ -71,9 +71,9 @@ git clone https://github.com/VladimirNagibin/foodgram-project-react.git
 
 После push в ветку main запустится процесс тестирования и деплоя на удалённый сервер. Если заданы настройки, тогда будут загружены тестовые данные и создан суперпользователь.
 
-Адрес сайта: https://foodgram-vl.zapto.org
-Superuser login: superuser
-Superuser password: pass
+- Адрес сайта: https://foodgram-vl.zapto.org
+- Superuser login: superuser
+- Superuser password: pass
 
 ____
 

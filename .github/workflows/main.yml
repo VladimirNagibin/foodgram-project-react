@@ -168,7 +168,7 @@ jobs:
 
   send_message:
     runs-on: ubuntu-latest
-    needs: executing_remote_ssh_commands
+    needs: deploy
     steps:
     - name: Send message
       uses: appleboy/telegram-action@master
