@@ -2,7 +2,9 @@ from colorfield.fields import ColorField
 from django.db import models
 
 from core.models import NameModel
-from recipes.constants import MEASU_CHOICES, MEASU_MAX_LENGHT, SLUG_MAX_LENGHT
+from recipes.constants import (
+    NAME_MAX_LENGHT, MEASU_CHOICES, MEASU_MAX_LENGHT, SLUG_MAX_LENGHT
+)
 
 
 class Ingredient(NameModel):
@@ -21,19 +23,23 @@ class Ingredient(NameModel):
         return f'{self.name}, {self.measurement_unit}'
 
 
-class Tag(NameModel):
-    color = ColorField('Цвет', blank=True, null=True)
+class Tag(models.Model):
+    name = models.CharField(
+        'Название',
+        max_length=NAME_MAX_LENGHT,
+        unique=True,
+    )
+    color = ColorField('Цвет', unique=True)
     slug = models.SlugField(
         'Слаг',
         max_length=SLUG_MAX_LENGHT,
-        blank=True,
-        null=True,
         unique=True,
     )
 
-    class Meta(NameModel.Meta):
+    class Meta:
         verbose_name = 'тег'
         verbose_name_plural = 'Теги'
+        ordering = ('name',)
 
 
 class Recipe(NameModel):
