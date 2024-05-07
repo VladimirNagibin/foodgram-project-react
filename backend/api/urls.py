@@ -16,7 +16,7 @@ router.register('users', UserViewSet, basename='users')
 
 urlpatterns = [
     re_path(
-        r'users/(?P<user_id>\d+)/subscribe/', subscribe, name='subscribes'
+        r'users/(?P<id>\d+)/subscribe/', subscribe, name='subscribes'
     ),
     path('', include(router.urls)),
     path('auth/', include('djoser.urls.authtoken')),

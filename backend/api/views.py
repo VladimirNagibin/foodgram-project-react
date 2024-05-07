@@ -1,12 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Exists, OuterRef, Subquery, Sum, Value
-from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from reportlab.lib.units import inch
-from reportlab.lib.utils import ImageReader
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -23,6 +17,7 @@ from api.serializers import (IngredientSerialiser, RecipeMinifieldSerialiser,
                              UserShoppingCartSerializer,
                              UserSubscribeSerializer,
                              UserWithRecipesSerializer)
+from api.servises import get_pdf
 from recipes.models import Ingredient, Recipe, Tag
 from users.models import SubscriptionUser
 
@@ -101,12 +96,12 @@ def subscribe(request, **kwargs):
                     recipes_count=Count('recipes')
                 ).annotate(is_subscribed=Value(True)).prefetch_related(
                     'recipes'
-                ).get(id=kwargs['user_id']), context={'request': request}
+                ).get(id=kwargs['id']), context={'request': request}
             ).data,
             status=status.HTTP_201_CREATED
         )
     else:
-        request.user.subscriptions.remove(kwargs['user_id'])
+        request.user.subscriptions.remove(kwargs['id'])
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
@@ -183,7 +178,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=('POST', ),
         url_name='favorite',
-        url_path=r'(?P<recipe_id>\d+)/favorite',
+        url_path=r'(?P<id>\d+)/favorite',
         permission_classes=(IsAuthenticated, ))
     def favorite_add(self, request, **kwargs):
         """Функция для добавления в избранное."""
@@ -196,7 +191,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(
             RecipeMinifieldSerialiser(
-                Recipe.objects.get(id=kwargs['recipe_id'])
+                Recipe.objects.get(id=kwargs['id'])
             ).data,
             status=status.HTTP_201_CREATED
         )
@@ -210,7 +205,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        request.user.favorites.remove(kwargs['recipe_id'])
+        request.user.favorites.remove(kwargs['id'])
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
@@ -219,7 +214,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=False,
         methods=('POST', ),
         url_name='shopping_cart',
-        url_path=r'(?P<recipe_id>\d+)/shopping_cart',
+        url_path=r'(?P<id>\d+)/shopping_cart',
         permission_classes=(IsAuthenticated, ))
     def shopping_cart_add(self, request, **kwargs):
         """Функция для добавления в список покупок."""
@@ -232,7 +227,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(
             RecipeMinifieldSerialiser(
-                Recipe.objects.get(id=kwargs['recipe_id'])
+                Recipe.objects.get(id=kwargs['id'])
             ).data,
             status=status.HTTP_201_CREATED
         )
@@ -246,99 +241,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        request.user.shopping_cart.remove(kwargs['recipe_id'])
+        request.user.shopping_cart.remove(kwargs['id'])
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
-
-    def get_pdf(self, user, link):
-        ingredients = user.shopping_cart.prefetch_related(
-            'ingredients'
-        ).values(
-            'ingredients__name',
-            'ingredients__measurement_unit'
-        ).annotate(amount=Sum('ingredient_recipes__amount')).order_by(
-            'ingredients__name'
-        )
-        pdfmetrics.registerFont(
-            TTFont('DejaVuSerif', 'DejaVuSerif.ttf', 'UTF-8')
-        )
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = ('attachment;'
-                                           'filename="ingredients.pdf"')
-        y_start = 600
-        y = 750
-        x = 100
-        x_start = 10
-        size = 1
-        size_recipe = 0.5
-        step = 20
-        step_big = 50
-        font = 20
-        font_big = 50
-        font_middle = 25
-        max_length = 40
-        head_length = 5
-        logo_path = '../static/logo192.png'
-        p = canvas.Canvas(response)
-        try:
-            p.drawImage(
-                ImageReader(logo_path), x_start, y, size * inch, size * inch
-            )
-        except Exception:
-            ...
-        p.setFont("DejaVuSerif", font_big)
-        p.drawString(x, y, 'FOODGRAM')
-        p.linkURL(
-            link,
-            (x, y, x + head_length * inch, y + step_big),
-            relative=1
-        )
-        y -= step_big
-        p.setFont("DejaVuSerif", font_middle)
-        p.drawString(x_start, y, "Для приготовления выбранных блюд:")
-        y -= step_big
-        p.setFont("DejaVuSerif", font)
-        for recipe in user.shopping_cart.all():
-            image = ImageReader(recipe.image)
-            p.drawImage(
-                image,
-                x_start + step,
-                y,
-                size_recipe * inch,
-                size_recipe * inch,
-            )
-            p.drawString(
-                x, y, f'{recipe.name[:max_length]}'
-            )
-            y -= step_big
-            if y <= 0:
-                y = y_start
-                p.showPage()
-                p.setFont("DejaVuSerif", font)
-        p.setFont("DejaVuSerif", font_middle)
-        p.drawString(x_start, y, "Требуются следующие ингредиенты:")
-        y -= step_big
-        if y <= 0:
-            y = y_start
-            p.showPage()
-        p.setFont("DejaVuSerif", font)
-        for ingredient in ingredients:
-            p.drawString(
-                x, y,
-                (f'{ingredient["ingredients__name"]}, '
-                 f'{ingredient["amount"]} '
-                 f'{ingredient["ingredients__measurement_unit"]}')
-            )
-            y -= step
-            if y <= 0:
-                y = y_start
-                p.showPage()
-                p.setFont("DejaVuSerif", font)
-
-        p.showPage()
-        p.save()
-        return response
 
     @action(
         detail=False,
@@ -348,5 +254,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated, ))
     def download_shopping_cart(self, request):
         """Функция для скачивания списка покупок."""
-
-        return self.get_pdf(request.user, request.build_absolute_uri('/'))
+        recipes = request.user.shopping_cart.all()
+        ingredients = recipes.prefetch_related(
+            'ingredients'
+        ).values(
+            'ingredients__name',
+            'ingredients__measurement_unit'
+        ).annotate(amount=Sum('ingredient_recipes__amount')).order_by(
+            'ingredients__name'
+        )
+        return get_pdf(ingredients, recipes, request.build_absolute_uri('/'))
