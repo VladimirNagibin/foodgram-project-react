@@ -76,13 +76,11 @@ jobs:
     - name: Set up nodeJS
       uses: actions/setup-node@v3
       with:
-        node-version: 13
+        node-version: 14
     - name: Install dependencies
       run: |
         cd frontend/
         npm install
-        npm install --save-dev "react@^16.6.0"
-        npm install --save-dev "react-dom@^16.6.0"
 
     - name: Test frontend
       run: |
