@@ -32,15 +32,16 @@ class UserViewSet(viewsets.ModelViewSet):
     pagination_class = LimitPageNumberPagination
 
     def get_queryset(self):
-        user_id = (self.request.user.id
-                   if self.request.user.is_authenticated else 0)
-        return User.objects.annotate(
-            is_subscribed=Exists(Subquery(
-                SubscriptionUser.objects.filter(
-                    author=OuterRef('pk'),
-                    user=user_id)
-            ))
-        ).order_by('username')
+        #user_id = (self.request.user.id
+        #           if self.request.user.is_authenticated else 0)
+        #return User.objects.annotate(
+        #    is_subscribed=Exists(Subquery(
+        #        SubscriptionUser.objects.filter(
+        #            author=OuterRef('pk'),
+        #            user=user_id)
+        #    ))
+        #).order_by('username')
+        return User.objects.all()
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -94,7 +95,8 @@ def subscribe(request, **kwargs):
             UserWithRecipesSerializer(
                 User.objects.annotate(
                     recipes_count=Count('recipes')
-                ).annotate(is_subscribed=Value(True)).prefetch_related(
+                # ).annotate(is_subscribed=Value(True)).prefetch_related(
+                ).prefetch_related(
                     'recipes'
                 ).get(id=kwargs['id']), context={'request': request}
             ).data,
@@ -116,7 +118,8 @@ class SubscriptionListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def get_queryset(self):
         return self.request.user.subscriptions.annotate(
             recipes_count=Count('recipes')
-        ).annotate(is_subscribed=Value(True)).prefetch_related(
+        ).prefetch_related(
+        #).annotate(is_subscribed=Value(True)).prefetch_related(
             'recipes'
         ).order_by('username')
 

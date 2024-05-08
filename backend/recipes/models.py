@@ -1,8 +1,11 @@
 from colorfield.fields import ColorField
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from core.models import NameModel
-from recipes.constants import (MEASU_CHOICES, MEASU_MAX_LENGHT,
+from recipes.constants import (AMOUNT_MIN_VALUE, COOKING_MIN_TIME,
+                               MEASU_CHOICES, MEASU_MAX_LENGHT,
                                NAME_MAX_LENGHT, SLUG_MAX_LENGHT, TEXT_LIMIT)
 
 
@@ -52,10 +55,17 @@ class Recipe(NameModel):
     )
     image = models.ImageField(
         'Картинка',
-        upload_to='recipes/'
+        upload_to='recipes/',
+        blank=True,
     )
     text = models.TextField('Описание')
-    cooking_time = models.PositiveSmallIntegerField('Время приготовления')
+    cooking_time = models.PositiveSmallIntegerField(
+        'Время приготовления',
+        validators=(
+            MinValueValidator(COOKING_MIN_TIME,
+                              message='Задайте время приготовления'),
+        ),
+    )
     ingredients = models.ManyToManyField(
         Ingredient,
         verbose_name='Ингредиенты',
@@ -72,6 +82,12 @@ class Recipe(NameModel):
         default_related_name = 'recipes'
         ordering = ('created',)
 
+    #def clean(self):
+    #    #if self.ingredients.all() == 1:
+    #    if 1 == 1:
+    #        raise ValidationError("Ингредиенты дублируются")
+    #    super().clean()
+
 
 class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(
@@ -84,7 +100,13 @@ class IngredientRecipe(models.Model):
         verbose_name='Рецепт',
         on_delete=models.CASCADE,
     )
-    amount = models.PositiveSmallIntegerField('Количество')
+    amount = models.PositiveSmallIntegerField(
+        'Количество',
+        validators=(
+            MinValueValidator(AMOUNT_MIN_VALUE,
+                              message='Задайте количество ингредиента.'),
+        ),
+    )
 
     class Meta:
         verbose_name = 'ингредиент'

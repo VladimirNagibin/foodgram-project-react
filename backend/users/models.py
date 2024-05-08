@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from users.constants import (EMAIL_MAX_LENGHT, NAME_MAX_LENGHT,
@@ -42,7 +43,7 @@ class User(AbstractUser):
         through='SubscriptionUser',
         symmetrical=False,
         verbose_name='Подписки',
-        related_name='followers'
+        related_name='followers',
     )
 
     class Meta:
@@ -84,3 +85,8 @@ class SubscriptionUser(models.Model):
 
     def __str__(self):
         return f'{self.author}'
+
+    def clean(self):
+        if self.user == self.author:
+            raise ValidationError("Невозможно подписаться на себя")
+        super().clean()

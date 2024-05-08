@@ -2,6 +2,8 @@ NAME_MAX_LENGHT = 200
 TEXT_LIMIT = 50
 SLUG_MAX_LENGHT = 200
 COLOR_MAX_LENGHT = 7
+COOKING_MIN_TIME = 1
+AMOUNT_MIN_VALUE = 1
 MEASU_CHOICES = (
     ('банка', 'банка'),
     ('батон', 'батон'),

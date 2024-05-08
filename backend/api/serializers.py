@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.http import Http404
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
@@ -37,10 +38,18 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserIsSubscribedSerializer(UserSerializer):
 
-    is_subscribed = serializers.BooleanField(read_only=True, default=False)
+    # is_subscribed = serializers.BooleanField(read_only=True, default=False)
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ('is_subscribed',)
+
+    def get_is_subscribed(self, obj):
+        user = self.context.get('request').user
+        return (
+            obj in user.subscriptions.all() if user and user.is_authenticated
+            else False
+        )
 
 
 class UserWithRecipesSerializer(UserIsSubscribedSerializer):
@@ -118,7 +127,7 @@ class IngredientRecipeSerialiser(serializers.ModelSerializer):
 
 class RecipeMinifieldSerialiser(serializers.ModelSerializer):
 
-    image = Base64ImageField()
+    image = Base64ImageField(required=False)
     cooking_time = serializers.IntegerField(min_value=1)
 
     class Meta:
@@ -183,6 +192,7 @@ class RecipeSerialiser(RecipeMinifieldSerialiser):
                 [ingredient['ingredient_id'] for ingredient in value]
             )) < len(value)
         ):
+            #raise ValidationError("Ингредиенты дублируются")
             raise serializers.ValidationError(
                 'Ингредиенты повторяются.'
             )
@@ -201,13 +211,6 @@ class RecipeSerialiser(RecipeMinifieldSerialiser):
         if len(set(value)) < len(value):
             raise serializers.ValidationError(
                 'Тэги повторяются.'
-            )
-        return value
-
-    def validate_image(self, value):
-        if not value:
-            raise serializers.ValidationError(
-                'Картинка отсутствуют.'
             )
         return value
 
