@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 def get_pdf(ingredients, recipes, link):
 
     pdfmetrics.registerFont(
-        TTFont('DejaVuSerif', 'DejaVuSerif.ttf', 'UTF-8')
+        TTFont('Ubuntu-Regular', 'Ubuntu-Regular.ttf', 'UTF-8')
     )
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = ('attachment;'
@@ -36,7 +36,7 @@ def get_pdf(ingredients, recipes, link):
         )
     except Exception:
         ...
-    p.setFont("DejaVuSerif", font_big)
+    p.setFont("Ubuntu-Regular", font_big)
     p.drawString(x, y, 'FOODGRAM')
     p.linkURL(
         link,
@@ -44,10 +44,10 @@ def get_pdf(ingredients, recipes, link):
         relative=1
     )
     y -= step_big
-    p.setFont("DejaVuSerif", font_middle)
+    p.setFont("Ubuntu-Regular", font_middle)
     p.drawString(x_start, y, "Для приготовления выбранных блюд:")
     y -= step_big
-    p.setFont("DejaVuSerif", font)
+    p.setFont("Ubuntu-Regular", font)
     for recipe in recipes:
         image = ImageReader(recipe.image)
         p.drawImage(
@@ -64,14 +64,14 @@ def get_pdf(ingredients, recipes, link):
         if y <= 0:
             y = y_start
             p.showPage()
-            p.setFont("DejaVuSerif", font)
-    p.setFont("DejaVuSerif", font_middle)
+            p.setFont("Ubuntu-Regular", font)
+    p.setFont("Ubuntu-Regular", font_middle)
     p.drawString(x_start, y, "Требуются следующие ингредиенты:")
     y -= step_big
     if y <= 0:
         y = y_start
         p.showPage()
-    p.setFont("DejaVuSerif", font)
+    p.setFont("Ubuntu-Regular", font)
     for ingredient in ingredients:
         p.drawString(
             x, y,
@@ -83,7 +83,7 @@ def get_pdf(ingredients, recipes, link):
         if y <= 0:
             y = y_start
             p.showPage()
-            p.setFont("DejaVuSerif", font)
+            p.setFont("Ubuntu-Regular", font)
 
     p.showPage()
     p.save()

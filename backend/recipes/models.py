@@ -1,5 +1,4 @@
 from colorfield.fields import ColorField
-# from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -56,7 +55,6 @@ class Recipe(NameModel):
     image = models.ImageField(
         'Картинка',
         upload_to='recipes/',
-        blank=True,
     )
     text = models.TextField('Описание')
     cooking_time = models.PositiveSmallIntegerField(
@@ -81,12 +79,6 @@ class Recipe(NameModel):
         verbose_name_plural = 'Рецепты'
         default_related_name = 'recipes'
         ordering = ('created',)
-
-    # def clean(self):
-    #    #if self.ingredients.all() == 1:
-    #    if 1 == 1:
-    #        raise ValidationError("Ингредиенты дублируются")
-    #    super().clean()
 
 
 class IngredientRecipe(models.Model):

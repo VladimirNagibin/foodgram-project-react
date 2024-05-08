@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-# from django.core.exceptions import ValidationError
 from django.http import Http404
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
@@ -38,7 +37,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserIsSubscribedSerializer(UserSerializer):
 
-    # is_subscribed = serializers.BooleanField(read_only=True, default=False)
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
     class Meta(UserSerializer.Meta):
@@ -127,7 +125,7 @@ class IngredientRecipeSerialiser(serializers.ModelSerializer):
 
 class RecipeMinifieldSerialiser(serializers.ModelSerializer):
 
-    image = Base64ImageField(required=False)
+    image = Base64ImageField()
     cooking_time = serializers.IntegerField(min_value=1)
 
     class Meta:
@@ -153,7 +151,7 @@ class RecipeSerialiser(RecipeMinifieldSerialiser):
         required=False
     )
     tags = TagRelatedField(many=True, queryset=Tag.objects.all())
-    author = UserSerializer(read_only=True)
+    author = UserIsSubscribedSerializer(read_only=True)
     ingredients = IngredientRecipeSerialiser(
         many=True,
         source='ingredient_recipes',
@@ -185,22 +183,36 @@ class RecipeSerialiser(RecipeMinifieldSerialiser):
     def validate_ingredients(self, value):
         if not value:
             raise serializers.ValidationError(
-                'Ингредиенты отсутствуют.'
+                [{'ingredient': ['Ингредиенты отсутствуют.']}]
             )
-        if (
-            len(set(
-                [ingredient['ingredient_id'] for ingredient in value]
-            )) < len(value)
-        ):
-            # raise ValidationError("Ингредиенты дублируются")
-            raise serializers.ValidationError(
-                'Ингредиенты повторяются.'
-            )
+        error = []
+        ingredients_id = set()
         for ingredient in value:
-            if not Ingredient.objects.filter(id=ingredient['ingredient_id']):
-                raise serializers.ValidationError(
-                    'Ингредиент не найден.'
+            id = ingredient['ingredient_id']
+            if not Ingredient.objects.filter(id=id):
+                error.append(
+                    {'ingredient': [f'Ингредиент с id:{id} не найден.']}
                 )
+            else:
+                ingredient_name = Ingredient.objects.get(id=id).name
+                if id in ingredients_id:
+                    error.append(
+                        {'ingredient': [
+                            f'{ingredient_name} задан повторно.'
+                        ]}
+                    )
+                else:
+                    ingredients_id.add(id)
+                    error.append({})
+        if any(error):
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_image(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                'Картинка не найдена.'
+            )
         return value
 
     def validate_tags(self, value):
@@ -228,8 +240,18 @@ class RecipeSerialiser(RecipeMinifieldSerialiser):
         return recipe
 
     def update(self, instance, validated_data, **kwargs):
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredient_recipes')
+        try:
+            tags = validated_data.pop('tags')
+        except Exception:
+            raise serializers.ValidationError(
+                'Тэги отсутствуют.'
+            )
+        try:
+            ingredients = validated_data.pop('ingredient_recipes')
+        except Exception:
+            raise serializers.ValidationError(
+                'Ингредиенты отсутствуют.'
+            )
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
