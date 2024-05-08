@@ -135,3 +135,6 @@ media/
 
 docker-compose.yml
 
+upload
+
+.vscode
