@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Exists, OuterRef, Subquery, Sum, Value
+# from django.db.models import Count, Exists, OuterRef, Subquery, Sum, Value
+from django.db.models import Count, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
@@ -19,7 +20,8 @@ from api.serializers import (IngredientSerialiser, RecipeMinifieldSerialiser,
                              UserWithRecipesSerializer)
 from api.servises import get_pdf
 from recipes.models import Ingredient, Recipe, Tag
-from users.models import SubscriptionUser
+
+# from users.models import SubscriptionUser
 
 User = get_user_model()
 
@@ -32,15 +34,15 @@ class UserViewSet(viewsets.ModelViewSet):
     pagination_class = LimitPageNumberPagination
 
     def get_queryset(self):
-        #user_id = (self.request.user.id
+        # user_id = (self.request.user.id
         #           if self.request.user.is_authenticated else 0)
-        #return User.objects.annotate(
+        # return User.objects.annotate(
         #    is_subscribed=Exists(Subquery(
         #        SubscriptionUser.objects.filter(
         #            author=OuterRef('pk'),
         #            user=user_id)
         #    ))
-        #).order_by('username')
+        # ).order_by('username')
         return User.objects.all()
 
     def get_serializer_class(self):
@@ -95,13 +97,13 @@ def subscribe(request, **kwargs):
             UserWithRecipesSerializer(
                 User.objects.annotate(
                     recipes_count=Count('recipes')
-                # ).annotate(is_subscribed=Value(True)).prefetch_related(
                 ).prefetch_related(
                     'recipes'
                 ).get(id=kwargs['id']), context={'request': request}
             ).data,
             status=status.HTTP_201_CREATED
         )
+    # ).annotate(is_subscribed=Value(True)).prefetch_related(
     else:
         request.user.subscriptions.remove(kwargs['id'])
         return Response(
@@ -119,9 +121,9 @@ class SubscriptionListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return self.request.user.subscriptions.annotate(
             recipes_count=Count('recipes')
         ).prefetch_related(
-        #).annotate(is_subscribed=Value(True)).prefetch_related(
             'recipes'
         ).order_by('username')
+    # ).annotate(is_subscribed=Value(True)).prefetch_related(
 
 
 class TagViewSet(viewsets.ModelViewSet):
