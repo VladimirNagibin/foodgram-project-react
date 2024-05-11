@@ -1,5 +1,3 @@
-# from pprint import pprint
-
 from django.db.models import Count
 # from django.http import Http404
 from django.shortcuts import get_object_or_404
