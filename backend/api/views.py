@@ -12,7 +12,8 @@ from api.filters import IngredientFilter, RecipeFilter
 from api.paginations import LimitPageNumberPagination
 from api.permissions import IsAuthenticatedOrAuthorOrReadOnly
 from api.serializers import (FavoriteUserSerializer, IngredientSerialiser,
-                             RecipeSerialiser, ShoppingCartUserSerializer,
+                             RecipeCreateUpdateSerialiser,
+                             RecipeReadSerialiser, ShoppingCartUserSerializer,
                              SubscriptionUserSerializer, TagSerialiser,
                              UserWithRecipesSerializer)
 from api.servises import get_pdf
@@ -138,7 +139,6 @@ def remove_option_user(option_model, pk, request):
 
 class RecipeViewSet(viewsets.ModelViewSet):
 
-    serializer_class = RecipeSerialiser
     http_method_names = ('get', 'post', 'delete', 'patch')
     permission_classes = (IsAuthenticatedOrAuthorOrReadOnly, )
     pagination_class = LimitPageNumberPagination
@@ -151,6 +151,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).select_related(
             'author'
         )
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return RecipeReadSerialiser
+        return RecipeCreateUpdateSerialiser
 
     @action(
         detail=False,
@@ -197,7 +202,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 name=F('ingredient__name'),
                 measurement_unit=F('ingredient__measurement_unit')
             ).annotate(amount=Sum('amount')).order_by(
-                # 'ingredient__name'
                 'name'
             ),
             Recipe.objects.filter(shopping_cart_user__user=request.user),

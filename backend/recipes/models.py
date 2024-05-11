@@ -1,5 +1,4 @@
 from colorfield.fields import ColorField
-# from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
