@@ -1,24 +1,29 @@
 from colorfield.fields import ColorField
-from django.core.validators import MinValueValidator
+# from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from core.models import NameModel
-from recipes.constants import (AMOUNT_MIN_VALUE, COOKING_MIN_TIME,
-                               MEASU_CHOICES, MEASU_MAX_LENGHT,
+from core.models import NameModel, UserRecipeModel
+from recipes.constants import (AMOUNT_MAX_VALUE, AMOUNT_MIN_VALUE,
+                               COOKING_MAX_TIME, COOKING_MIN_TIME,
                                NAME_MAX_LENGHT, SLUG_MAX_LENGHT, TEXT_LIMIT)
 
 
 class Ingredient(NameModel):
     measurement_unit = models.CharField(
         'Единица измерения',
-        max_length=MEASU_MAX_LENGHT,
-        choices=MEASU_CHOICES,
+        max_length=NAME_MAX_LENGHT,
     )
 
     class Meta(NameModel.Meta):
         verbose_name = 'ингредиент'
         verbose_name_plural = 'Ингредиенты'
-        default_related_name = 'ingredients'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='unique_name_measurement_unit'
+            ),
+        )
 
     def __str__(self):
         return f'{self.name}, {self.measurement_unit}'
@@ -60,8 +65,14 @@ class Recipe(NameModel):
     cooking_time = models.PositiveSmallIntegerField(
         'Время приготовления',
         validators=(
-            MinValueValidator(COOKING_MIN_TIME,
-                              message='Задайте время приготовления'),
+            MinValueValidator(
+                COOKING_MIN_TIME,
+                message='Задайте время приготовления'
+            ),
+            MaxValueValidator(
+                COOKING_MAX_TIME,
+                message='Время приготовления превысило максимальное'
+            )
         ),
     )
     ingredients = models.ManyToManyField(
@@ -78,7 +89,7 @@ class Recipe(NameModel):
         verbose_name = 'рецепт'
         verbose_name_plural = 'Рецепты'
         default_related_name = 'recipes'
-        ordering = ('created',)
+        ordering = ('-created',)
 
 
 class IngredientRecipe(models.Model):
@@ -95,8 +106,14 @@ class IngredientRecipe(models.Model):
     amount = models.PositiveSmallIntegerField(
         'Количество',
         validators=(
-            MinValueValidator(AMOUNT_MIN_VALUE,
-                              message='Задайте количество ингредиента.'),
+            MinValueValidator(
+                AMOUNT_MIN_VALUE,
+                message='Задайте количество ингредиента.'
+            ),
+            MaxValueValidator(
+                AMOUNT_MAX_VALUE,
+                message='Количество ингредиента превысило максимальное.'
+            ),
         ),
     )
 
@@ -114,3 +131,31 @@ class IngredientRecipe(models.Model):
 
     def __str__(self):
         return f'{self.ingredient} {self.recipe}'
+
+
+class FavoriteUser(UserRecipeModel):
+
+    class Meta(UserRecipeModel.Meta):
+        verbose_name = 'избранное'
+        verbose_name_plural = 'Избранное'
+        default_related_name = 'favorite_users'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_favorite_user_recipe'
+            ),
+        )
+
+
+class ShoppingCartUser(UserRecipeModel):
+
+    class Meta(UserRecipeModel.Meta):
+        verbose_name = 'список покупок'
+        verbose_name_plural = 'Список покупок'
+        default_related_name = 'shopping_cart_user'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_shopping_cart_user_recipe'
+            ),
+        )

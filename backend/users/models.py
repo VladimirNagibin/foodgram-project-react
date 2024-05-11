@@ -26,25 +26,9 @@ class User(AbstractUser):
         max_length=NAME_MAX_LENGHT,
         verbose_name='Фамилия'
     )
-    favorites = models.ManyToManyField(
-        'recipes.Recipe',
-        verbose_name='Избранное',
-        related_name='favorite_users',
-        blank=True,
-    )
-    shopping_cart = models.ManyToManyField(
-        'recipes.Recipe',
-        verbose_name='Список покупок',
-        related_name='shopping_cart_users',
-        blank=True,
-    )
-    subscriptions = models.ManyToManyField(
-        'User',
-        through='SubscriptionUser',
-        symmetrical=False,
-        verbose_name='Подписки',
-        related_name='followers',
-    )
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'username']
 
     class Meta:
         ordering = ('username',)
@@ -52,7 +36,7 @@ class User(AbstractUser):
         verbose_name_plural = 'Пользователи'
 
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+        return self.get_full_name()
 
 
 class SubscriptionUser(models.Model):
@@ -84,9 +68,9 @@ class SubscriptionUser(models.Model):
         )
 
     def __str__(self):
-        return f'{self.author}'
+        return self.author.get_full_name()
 
     def clean(self):
         if self.user == self.author:
-            raise ValidationError("Невозможно подписаться на себя")
+            raise ValidationError('Невозможно подписаться на себя')
         super().clean()

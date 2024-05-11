@@ -1,14 +1,12 @@
 from django.contrib import admin
-from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
-from .constants import MAX_HEIGHT_IMAGE_SIZE
-from .models import SubscriptionUser
-from .servises import object_link
-
-User = get_user_model()
+from recipes.models import FavoriteUser, ShoppingCartUser
+from users.constants import MAX_HEIGHT_IMAGE_SIZE
+from users.models import SubscriptionUser, User
+from users.servises import object_link
 
 admin.site.unregister(Group)
 
@@ -17,6 +15,16 @@ class UserSubscriptorInline(admin.TabularInline):
     model = SubscriptionUser
     extra = 1
     fk_name = 'user'
+
+
+class UserFavoriteInline(admin.TabularInline):
+    model = FavoriteUser
+    extra = 1
+
+
+class UserFShoppingCartInline(admin.TabularInline):
+    model = ShoppingCartUser
+    extra = 1
 
 
 @admin.register(User)
@@ -30,8 +38,6 @@ class UserAdmin(BaseUserAdmin):
                                 'is_staff',
                                 'is_superuser')}),
         ('Рецепты пользователя', {'fields': ('recipes_of_user', )}),
-        ('Избранные рецепты', {'fields': ('favorites', )}),
-        ('Рецепты в корзине', {'fields': ('shopping_cart', )}),
         ('Даты', {'fields': ('last_login',
                              'date_joined')}),
 
@@ -43,24 +49,29 @@ class UserAdmin(BaseUserAdmin):
         'last_name',
         'email',
         'recipes_count',
+        'subscribers_count',
         'is_staff',
     )
     list_filter = ('email', 'username')
     search_fields = ('email', 'username', 'first_name', 'last_name')
     list_editable = ('first_name', 'last_name', 'email')
-    filter_horizontal = ('favorites', 'shopping_cart')
     readonly_fields = ('recipes_of_user',)
-    inlines = (UserSubscriptorInline,)
+    inlines = (UserSubscriptorInline, UserFavoriteInline,
+               UserFShoppingCartInline)
 
-    @admin.display(description='Кол-во рецептов у пользователя')
+    @admin.display(description='Кол-во рецептов.')
     def recipes_count(self, obj):
         return obj.recipes.count()
 
-    @admin.display(description='Рецепты пользователя')
+    @admin.display(description='Рецепты пользователя.')
     def recipes_of_user(self, obj):
-        recipes = ", ".join(
+        recipes = ', '.join(
             [(f'<img src={recipe.image.url} '
               f'style="max-height: {MAX_HEIGHT_IMAGE_SIZE}px;"> '
               f'{object_link(recipe)}') for recipe in obj.recipes.all()]
         )
         return mark_safe(recipes)
+
+    @admin.display(description='Кол-во подписчиков.')
+    def subscribers_count(self, obj):
+        return obj.subscribers.count()

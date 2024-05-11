@@ -6,7 +6,8 @@ from django.core.management.base import BaseCommand
 from django.core.management.color import no_style
 from django.db import IntegrityError, connection
 
-from recipes.models import Ingredient, IngredientRecipe, Recipe, Tag
+from recipes.models import (FavoriteUser, Ingredient, IngredientRecipe, Recipe,
+                            ShoppingCartUser, Tag)
 from users.models import SubscriptionUser
 
 User = get_user_model()
@@ -35,10 +36,10 @@ DATA = (
      apps.get_model('recipes', 'recipe_tags'),
      ['tag_id', 'recipe_id']),
     ('favorite_recipe.csv',
-     apps.get_model('users', 'user_favorites'),
+     FavoriteUser,
      ['user_id', 'recipe_id']),
     ('shopping_cart_recipe.csv',
-     apps.get_model('users', 'user_shopping_cart'),
+     ShoppingCartUser,
      ['user_id', 'recipe_id']),
 )
 
