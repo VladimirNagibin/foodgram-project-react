@@ -1,12 +1,10 @@
 from django.db.models import Count, F, Sum
-from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
-from rest_framework import mixins, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.serializers import ValidationError
 
 from api.filters import IngredientFilter, RecipeFilter
 from api.paginations import LimitPageNumberPagination
@@ -16,7 +14,7 @@ from api.serializers import (FavoriteUserSerializer, IngredientSerialiser,
                              RecipeReadSerialiser, ShoppingCartUserSerializer,
                              SubscriptionUserSerializer, TagSerialiser,
                              UserWithRecipesSerializer)
-from api.servises import get_pdf
+from api.servises import add_option_user, get_pdf, remove_option_user
 from recipes.models import (FavoriteUser, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCartUser, Tag)
 from users.models import SubscriptionUser, User
@@ -28,7 +26,7 @@ class UserViewSet(DjoserUserViewSet):
 
     def get_permissions(self):
         if self.action == 'me':
-            self.permission_classes = (IsAuthenticated,)
+            return (IsAuthenticated(),)
         return super().get_permissions()
 
     @action(
@@ -40,11 +38,8 @@ class UserViewSet(DjoserUserViewSet):
     def subscribe(self, request, **kwargs):
         """Функция для подписки."""
         serializer = SubscriptionUserSerializer(
-            data=request.data,
-            context={
-                'request': request,
-                'option_data': {'user': request.user, 'author': kwargs['id']}
-            }
+            data={'user': request.user.id, 'author': kwargs['id']},
+            context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -56,17 +51,13 @@ class UserViewSet(DjoserUserViewSet):
     @subscribe.mapping.delete
     def del_subscribe(self, request, **kwargs):
         """Функция для отмены подписки."""
-        author = get_object_or_404(User, id=kwargs['id'])
-        if SubscriptionUser.objects.filter(user=request.user, author=author):
-            SubscriptionUser.objects.get(user=request.user,
-                                         author=kwargs['id']).delete()
+        subscr_user = SubscriptionUser.objects.filter(user=request.user,
+                                                      author=kwargs['id'])
+        if subscr_user.exists():
+            subscr_user.delete()
         else:
-            raise ValidationError(
-                'Запись для удаления подписки ещё не добавлена.'
-            )
-        return Response(
-            status=status.HTTP_204_NO_CONTENT
-        )
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=False,
@@ -89,52 +80,22 @@ class UserViewSet(DjoserUserViewSet):
         return self.get_paginated_response(serializer.data)
 
 
-class ListRetriveViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
-                         viewsets.GenericViewSet):
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
+
     permission_classes = (AllowAny,)
     pagination_class = None
-
-
-class TagViewSet(ListRetriveViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerialiser
 
 
-class IngredientViewSet(ListRetriveViewSet):
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
+    permission_classes = (AllowAny,)
+    pagination_class = None
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerialiser
     filter_backends = (DjangoFilterBackend, )
     filterset_class = IngredientFilter
-
-
-def add_option_user(option_serializer, pk, request):
-    serializer = option_serializer(
-        data=request.data,
-        context={
-            'option_data': {'user': request.user, 'recipe': pk}
-        },
-    )
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response(
-        serializer.data,
-        status=status.HTTP_201_CREATED
-    )
-
-
-def remove_option_user(option_model, pk, request):
-    recipe = get_object_or_404(Recipe, id=pk)
-    if option_model.objects.filter(user=request.user, recipe=recipe):
-        option_model.objects.get(user=request.user,
-                                 recipe=recipe).delete()
-    else:
-        raise ValidationError(
-            'Запись для удаления ещё не добавлена.'
-        )
-    return Response(
-        status=status.HTTP_204_NO_CONTENT
-    )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -153,7 +114,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
+        if self.action in ('list', 'retrieve'):
             return RecipeReadSerialiser
         return RecipeCreateUpdateSerialiser
 

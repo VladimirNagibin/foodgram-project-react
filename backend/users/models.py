@@ -8,6 +8,10 @@ from users.constants import (EMAIL_MAX_LENGHT, NAME_MAX_LENGHT,
 
 
 class User(AbstractUser):
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('first_name', 'last_name', 'username')
+
     password = models.CharField(
         max_length=PASSWORD_MAX_LENGHT,
         verbose_name='Пароль',
@@ -26,9 +30,6 @@ class User(AbstractUser):
         max_length=NAME_MAX_LENGHT,
         verbose_name='Фамилия'
     )
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'username']
 
     class Meta:
         ordering = ('username',)

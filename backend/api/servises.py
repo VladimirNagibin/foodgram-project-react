@@ -4,6 +4,8 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
+from rest_framework import status
+from rest_framework.response import Response
 
 
 def get_pdf(ingredients, recipes, link):
@@ -88,3 +90,26 @@ def get_pdf(ingredients, recipes, link):
     p.showPage()
     p.save()
     return response
+
+
+def add_option_user(option_serializer, pk, request):
+    serializer = option_serializer(
+        data={'user': request.user.id, 'recipe': pk},
+        context={'request': request}
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(
+        serializer.data,
+        status=status.HTTP_201_CREATED
+    )
+
+
+def remove_option_user(option_model, pk, request):
+    option_user = option_model.objects.filter(user=request.user,
+                                              recipe=pk)
+    if option_user.exists():
+        option_user.delete()
+    else:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_204_NO_CONTENT)
