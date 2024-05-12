@@ -111,5 +111,6 @@ def remove_option_user(option_model, pk, request):
     if option_user.exists():
         option_user.delete()
     else:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response({'errors': 'Запись для удаления ещё не добавлена.'},
+                        status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_204_NO_CONTENT)

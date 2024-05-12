@@ -56,7 +56,10 @@ class UserViewSet(DjoserUserViewSet):
         if subscr_user.exists():
             subscr_user.delete()
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'errors': 'Запись для удаления подписки ещё не добавлена.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
