@@ -48,7 +48,7 @@ class UserWithRecipesSerializer(UserSerializer):
             recipes_limit = int(
                 self.context['request'].query_params.get('recipes_limit')
             )
-        except Exception:
+        except (TypeError, ValueError, KeyError, AttributeError):
             recipes_limit = 0
 
         if recipes_limit:
@@ -190,32 +190,29 @@ class RecipeCreateUpdateSerialiser(serializers.ModelSerializer):
     def update(self, instance, validated_data, **kwargs):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        super().update(instance, validated_data)
         instance.tags.clear()
         instance.ingredients.clear()
         self.set_tags_ingredients_in_recipe(instance, tags, ingredients)
-        return instance
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
-        serializer = RecipeReadSerialiser(
-            instance, context=self.context
-        )
-        return serializer.data
+        return RecipeReadSerialiser(instance, context=self.context).data
 
 
 class OptionUserSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        fields = ('recipe', 'user')
+
     def validate(self, data):
-        if self.Meta.model.objects.filter(recipe=data['recipe'],
-                                          user=data['user']):
+        option_model = self.Meta.model
+        if option_model.objects.filter(recipe=data['recipe'],
+                                       user=data['user']).exists():
             raise serializers.ValidationError(
-                f'Не возможно добавить в {self.Meta.model._meta.verbose_name} '
+                f'Не возможно добавить в {option_model._meta.verbose_name} '
                 'повторно.'
             )
         return data
-
-    class Meta:
-        fields = ('recipe', 'user')
 
     def to_representation(self, instance):
         return RecipeMinifieldSerialiser(instance.recipe,
@@ -236,6 +233,10 @@ class ShoppingCartUserSerializer(OptionUserSerializer):
 
 class SubscriptionUserSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = SubscriptionUser
+        fields = ('author', 'user')
+
     def validate(self, data):
         author = data['author']
         user = data['user']
@@ -249,10 +250,6 @@ class SubscriptionUserSerializer(serializers.ModelSerializer):
                 'Невозможно подписаться на себя.'
             )
         return data
-
-    class Meta:
-        model = SubscriptionUser
-        fields = ('author', 'user')
 
     def to_representation(self, instance):
         return UserWithRecipesSerializer(
