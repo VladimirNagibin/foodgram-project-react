@@ -32,22 +32,20 @@ class IngredientRecipeInline(admin.TabularInline):
 class RecipeAdmin(admin.ModelAdmin):
     fields = (
         'name',
-        'author_',
+        'author',
         'image',
         'image_of_recipe',
         'favorite_users_count',
         'cooking_time',
         'tags',
         'text',
-        'tags_',
-        'ingredients_'
     )
     list_display = ('name', 'author_', 'tags_', 'ingredients_',
                     'image_of_recipe', 'favorite_users_count')
     search_fields = ('name', 'tags')
     list_filter = ('tags', 'author', 'name')
     readonly_fields = ('image_of_recipe', 'favorite_users_count', 'author_',
-                       'tags_', 'ingredients_')
+                       'tags_', 'ingredients_', 'author_')
     filter_horizontal = ('tags',)
     inlines = (IngredientRecipeInline,)
 
