@@ -107,6 +107,7 @@ git clone https://github.com/VladimirNagibin/foodgram-project-react.git
 Данные superuser при автоматической загрузке:
 - login: superuser@mail.ru
 - password: superuser_password
+
 ____
 
 **Владимир Нагибин** 
