@@ -36,16 +36,22 @@
 git clone https://github.com/VladimirNagibin/foodgram-project-react.git
 ```
 
-Создайте файл .env. Тестовые данные можно взять из .env.example.  
-
-Перейдите в директорию foodgram-project-react и запустите сервисы:
+Перейдите в директорию foodgram-project-react:
 
 ```
 cd foodgram-project-react
 ```
 
+Создайте файл .env. Тестовые данные можно взять из .env.example. 
+
 ```
-sudo docker compose stop && sudo docker compose up --build
+cp .env.example .env
+```
+
+Запустите сервисы:
+
+```
+sudo docker compose up
 ```
 
 Сайт будет доступен по адресу http://127.0.0.1:8080
