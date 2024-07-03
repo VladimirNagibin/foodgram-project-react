@@ -133,7 +133,7 @@ dmypy.json
 
 media/
 
-docker-compose.yml
+# docker-compose.yml
 
 upload
 
